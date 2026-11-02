@@ -206,24 +206,26 @@ void ScopeView::paint(juce::Graphics& g)
     const int wi = hist.writeIndex.load(std::memory_order_acquire);
 
     juce::Path dry, fx;
-    auto heightOf = [&](float peak) { return juce::jmax(0.6f, juce::jmin(1.f, peak * gain) * H); };
+    // input keeps a hairline in silence; the FX layer disappears completely so the centre line stays grey
+    auto heightOf = [&](float peak, float minH) { return juce::jmax(minH, juce::jmin(1.f, peak * gain) * H); };
 
     for (int pass = 0; pass < 2; ++pass)
     {
         auto& path = pass == 0 ? dry : fx;
         auto& arr  = pass == 0 ? hist.in : hist.fx;
+        const float minH = pass == 0 ? 0.6f : 0.f;
         // top edge left→right
         for (int i = 0; i < cols; ++i)
         {
             const int idx = (wi - cols + i) & (ScopeHistory::size - 1);
-            const float y = mid - heightOf(arr[(size_t) idx].load(std::memory_order_relaxed));
+            const float y = mid - heightOf(arr[(size_t) idx].load(std::memory_order_relaxed), minH);
             if (i == 0) path.startNewSubPath((float) (w - cols), y); else path.lineTo((float) (w - cols + i), y);
         }
         // bottom edge right→left
         for (int i = cols - 1; i >= 0; --i)
         {
             const int idx = (wi - cols + i) & (ScopeHistory::size - 1);
-            path.lineTo((float) (w - cols + i), mid + heightOf(arr[(size_t) idx].load(std::memory_order_relaxed)));
+            path.lineTo((float) (w - cols + i), mid + heightOf(arr[(size_t) idx].load(std::memory_order_relaxed), minH));
         }
         path.closeSubPath();
     }
