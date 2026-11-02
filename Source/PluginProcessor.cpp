@@ -7,14 +7,14 @@ APVTS::ParameterLayout RogerThatProcessor::createLayout()
 {
     APVTS::ParameterLayout l;
     auto pct = juce::NormalisableRange<float>(0.f, 100.f, 0.1f);
-    // Defaults = the user's preset: Comp 100, Retro BP 2042/34, Garage Fuzz 70, Box 9, Mix 30
+    // Defaults = the user's preset (2 Nov 2026): Comp 100, Retro BP 2042/34, Garage Fuzz 64, Box 9, Mix 14
     l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"comp_on", 1}, "Compressor", true));
     l.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"comp_amount", 1}, "Compressor Amount", pct, 100.f));
     l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"filt_on", 1}, "Filter", true));
     l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"dist_on", 1}, "Fuzz", true));
-    l.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"dist_amount", 1}, "Fuzz Amount", pct, 70.f));
+    l.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"dist_amount", 1}, "Fuzz Amount", pct, 64.f));
     l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"box_on", 1}, "Box", true));
-    l.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"mix", 1}, "Mix", pct, 30.f));
+    l.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"mix", 1}, "Mix", pct, 14.f));
     return l;
 }
 
