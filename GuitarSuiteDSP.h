@@ -5,6 +5,9 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 #include "GuitarSuiteData.h"
 
 namespace gs {
@@ -37,6 +40,31 @@ public:
 private:
     std::vector<float> h, buf; size_t pos = 0;
 };
+
+
+// Resample a measured impulse response (48 kHz) to the host sample rate with a windowed sinc,
+// preserving the frequency response in Hz. Done once in prepare(); IRs are short.
+inline std::vector<float> resampleIR(const float* h, size_t n, double srOld, double srNew)
+{
+    if (std::fabs(srOld - srNew) < 1.0) return std::vector<float>(h, h + n);
+    const double ratio = srOld / srNew;        // old samples per new sample
+    const int half = 64;
+    const size_t nNew = (size_t)std::ceil((double)n / ratio) + (size_t)half;
+    std::vector<float> out(nNew, 0.f);
+    for (size_t i = 0; i < nNew; ++i) {
+        const double t = (double)i * ratio;
+        const long kc = (long)std::floor(t);
+        double acc = 0.0;
+        for (long k = std::max(0L, kc - half); k <= std::min((long)n - 1, kc + half); ++k) {
+            const double x = t - (double)k;
+            const double w = 0.5 * (1.0 + std::cos(M_PI * x / half));
+            const double sinc = (std::fabs(x) < 1e-9) ? 1.0 : std::sin(M_PI * x) / (M_PI * x);
+            acc += (double)h[k] * sinc * w;
+        }
+        out[i] = (float)(acc * ratio);
+    }
+    return out;
+}
 
 // Compressor: instant-attack peak follower with short release, hard-knee gain computer in dB,
 // then one-pole smoothing of the *linear* gain (attack when gain falls, release when it rises).
@@ -101,8 +129,10 @@ class GuitarSuite {
 public:
     void prepare(double sr) {
         comp.prepare(sr);
-        filt.set(kFilterFIR_2042_res31, sizeof(kFilterFIR_2042_res31) / sizeof(float));
-        box.set(kBoxIR_model9, sizeof(kBoxIR_model9) / sizeof(float));
+        auto f = resampleIR(kFilterFIR_2042_res31, sizeof(kFilterFIR_2042_res31) / sizeof(float), 48000.0, sr);
+        auto b = resampleIR(kBoxIR_model9, sizeof(kBoxIR_model9) / sizeof(float), 48000.0, sr);
+        filt.set(f.data(), f.size());
+        box.set(b.data(), b.size());
         setParams(p);
         reset();
     }

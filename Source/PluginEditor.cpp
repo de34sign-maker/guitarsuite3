@@ -55,7 +55,7 @@ void GuitarSuiteEditor::timerCallback()
 {
     const double sr = proc.currentSampleRate;
     srWarn.setText(std::abs(sr - 48000.0) < 1.0 ? juce::String()
-                   : "Calibrated at 48 kHz. Current session: " + juce::String(sr / 1000.0, 1) + " kHz (tone will shift slightly)",
+                   : "Measured at 48 kHz, recalculated for " + juce::String(sr / 1000.0, 1) + " kHz session",
                    juce::dontSendNotification);
 }
 
@@ -64,7 +64,7 @@ void GuitarSuiteEditor::paint(juce::Graphics& g)
     g.fillAll(juce::Colour(0xff2b2b2b));
     g.setColour(juce::Colours::white);
     g.setFont(juce::Font(juce::FontOptions(18.f, juce::Font::bold)));
-    g.drawText("Guitar Suite 3.0 — Audition clone", 0, 8, getWidth(), 24, juce::Justification::centred);
+    g.drawText(juce::String::fromUTF8("Guitar Suite 3.0 \xe2\x80\x94 Audition clone"), 0, 8, getWidth(), 24, juce::Justification::centred);
     g.setColour(juce::Colour(0xff3c3c3c));
     for (int i = 0; i < 5; ++i) g.fillRoundedRectangle(10.f, 44.f + i * 64.f, (float)getWidth() - 20.f, 58.f, 6.f);
 }
