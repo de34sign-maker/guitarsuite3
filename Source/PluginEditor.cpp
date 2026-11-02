@@ -43,20 +43,7 @@ GuitarSuiteEditor::GuitarSuiteEditor(GuitarSuiteProcessor& p) : AudioProcessorEd
     addAndMakeVisible(mix);
     mixAtt = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(proc.apvts, "mix", mix);
 
-    srWarn.setJustificationType(juce::Justification::centred);
-    srWarn.setColour(juce::Label::textColourId, juce::Colours::orange);
-    addAndMakeVisible(srWarn);
-
     setSize(460, 400);
-    startTimerHz(2);
-}
-
-void GuitarSuiteEditor::timerCallback()
-{
-    const double sr = proc.currentSampleRate;
-    srWarn.setText(std::abs(sr - kDataSampleRate) < 1.0 ? juce::String()
-                   : "Measured at 44.1 kHz, recalculated for " + juce::String(sr / 1000.0, 1) + " kHz session",
-                   juce::dontSendNotification);
 }
 
 void GuitarSuiteEditor::paint(juce::Graphics& g)
@@ -80,5 +67,4 @@ void GuitarSuiteEditor::resized()
     place(comp, 48); place(filt, 112); place(dist, 176); place(box, 240);
     mixLabel.setBounds(20, 304, 140, 24);
     mix.setBounds(90, 330, getWidth() - 110, 24);
-    srWarn.setBounds(10, 368, getWidth() - 20, 24);
 }

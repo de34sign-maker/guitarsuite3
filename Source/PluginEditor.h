@@ -1,7 +1,7 @@
 #pragma once
 #include "PluginProcessor.h"
 
-class GuitarSuiteEditor : public juce::AudioProcessorEditor, private juce::Timer
+class GuitarSuiteEditor : public juce::AudioProcessorEditor
 {
 public:
     explicit GuitarSuiteEditor(GuitarSuiteProcessor&);
@@ -10,7 +10,6 @@ public:
     void resized() override;
 
 private:
-    void timerCallback() override;
 
     struct Row {
         juce::ToggleButton on; juce::Slider amount; juce::Label title, fixed;
@@ -21,7 +20,7 @@ private:
 
     GuitarSuiteProcessor& proc;
     Row comp, filt, dist, box;
-    juce::Slider mix; juce::Label mixLabel, srWarn;
+    juce::Slider mix; juce::Label mixLabel;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAtt;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GuitarSuiteEditor)
