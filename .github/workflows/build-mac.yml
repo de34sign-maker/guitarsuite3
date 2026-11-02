@@ -18,37 +18,39 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
 
       - name: Build
-        run: cmake --build build --config Release -j4 --target GuitarSuiteClone_VST3 GuitarSuiteClone_AU GuitarSuiteClone_Standalone
+        run: cmake --build build --config Release -j4 --target RogerThat_VST3 RogerThat_AU RogerThat_Standalone
 
       - name: Ad-hoc codesign and package
         run: |
           set -e
-          ART=build/GuitarSuiteClone_artefacts/Release
+          ART=build/RogerThat_artefacts/Release
           ls -R "$ART" | head -50
-          codesign --force --deep -s - "$ART/VST3/GuitarSuite3.vst3"
-          codesign --force --deep -s - "$ART/AU/GuitarSuite3.component"
-          codesign --force --deep -s - "$ART/Standalone/GuitarSuite3.app"
+          codesign --force --deep -s - "$ART/VST3/RogerThat.vst3"
+          codesign --force --deep -s - "$ART/AU/RogerThat.component"
+          codesign --force --deep -s - "$ART/Standalone/RogerThat.app"
           mkdir -p dist
-          cp -R "$ART/VST3/GuitarSuite3.vst3" "$ART/AU/GuitarSuite3.component" "$ART/Standalone/GuitarSuite3.app" dist/
+          cp -R "$ART/VST3/RogerThat.vst3" "$ART/AU/RogerThat.component" "$ART/Standalone/RogerThat.app" dist/
           cat > dist/УСТАНОВКА.txt <<'EOF'
-          1. Скопировать GuitarSuite3.vst3      в  ~/Library/Audio/Plug-Ins/VST3/
-             Скопировать GuitarSuite3.component в  ~/Library/Audio/Plug-Ins/Components/
-             (Finder: Переход -> Переход к папке... -> вставить путь. Если папки нет - создать.)
-          2. Открыть Терминал и выполнить две команды (снимают пометку "скачано из интернета"):
-             xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/GuitarSuite3.vst3
-             xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/GuitarSuite3.component
-          3. Перезапустить Studio One. Плагин: GuitarSuite3 (Bondar).
+          Roger That (vst34) — установка
+
+          1. Скопировать RogerThat.vst3 в /Library/Audio/Plug-Ins/VST3/
+             (Finder: Переход -> Переход к папке... -> вставить путь). Если там лежит старый
+             GuitarSuite3.vst3 — его можно удалить.
+             AU-версия (RogerThat.component) — в /Library/Audio/Plug-Ins/Components/, нужна только для Logic/GarageBand.
+          2. Открыть Терминал и выполнить (снимает пометку «скачано из интернета»):
+             sudo xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/RogerThat.vst3
+          3. Перезапустить Studio One. Плагин: Roger That (производитель vst34).
           EOF
-          cd dist && ditto -c -k --keepParent --sequesterRsrc . ../GuitarSuite3-macOS.zip
+          cd dist && ditto -c -k --keepParent --sequesterRsrc . ../RogerThat-macOS.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: GuitarSuite3-macOS
-          path: GuitarSuite3-macOS.zip
+          name: RogerThat-macOS
+          path: RogerThat-macOS.zip
 
       - name: Publish as "latest" release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest --cleanup-tag -y || true
-          gh release create latest GuitarSuite3-macOS.zip --title "GuitarSuite3 macOS (latest build)" --notes "VST3 + AU + Standalone, arm64+x86_64, ad-hoc signed. См. УСТАНОВКА.txt внутри архива."
+          gh release create latest RogerThat-macOS.zip --title "Roger That macOS (latest build)" --notes "VST3 + AU + Standalone, arm64+x86_64, ad-hoc signed. См. УСТАНОВКА.txt внутри архива."

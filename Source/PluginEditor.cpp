@@ -1,70 +1,73 @@
 #include "PluginEditor.h"
 
-void GuitarSuiteEditor::setupRow(Row& r, const juce::String& title, const juce::String& onId,
-                                 const juce::String& amtId, const juce::String& fixedText)
+using namespace rt;
+
+RogerThatEditor::RogerThatEditor(RogerThatProcessor& p)
+    : AudioProcessorEditor(&p), proc(p), scope(p.scope)
 {
-    r.title.setText(title, juce::dontSendNotification);
-    r.title.setFont(juce::Font(juce::FontOptions(15.f, juce::Font::bold)));
-    addAndMakeVisible(r.title);
+    addAndMakeVisible(scope);
 
-    r.on.setButtonText("On");
-    addAndMakeVisible(r.on);
-    r.onAtt = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(proc.apvts, onId, r.on);
+    for (auto* k : { &compKnob, &fuzzKnob, &mixKnob }) addAndMakeVisible(k);
+    for (auto* b : { (juce::Button*) &compOn, (juce::Button*) &fuzzOn, (juce::Button*) &filtOn, (juce::Button*) &boxOn }) addAndMakeVisible(b);
 
-    if (amtId.isNotEmpty())
-    {
-        r.amount.setSliderStyle(juce::Slider::LinearHorizontal);
-        r.amount.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 22);
-        r.amount.setTextValueSuffix(" %");
-        addAndMakeVisible(r.amount);
-        r.amtAtt = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(proc.apvts, amtId, r.amount);
-    }
-    else
-    {
-        r.fixed.setText(fixedText, juce::dontSendNotification);
-        r.fixed.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
-        addAndMakeVisible(r.fixed);
-    }
-}
-
-GuitarSuiteEditor::GuitarSuiteEditor(GuitarSuiteProcessor& p) : AudioProcessorEditor(&p), proc(p)
-{
-    setupRow(comp, "Compressor", "comp_on", "comp_amount", "");
-    setupRow(filt, "Filter", "filt_on", "", "Retro  /  Bandpass  /  2042 Hz  /  Resonance 34 %");
-    setupRow(dist, "Distortion", "dist_on", "dist_amount", "");
-    setupRow(box,  "Box Modeler", "box_on", "", "Model 9");
-
-    mixLabel.setText("Mix", juce::dontSendNotification);
-    mixLabel.setFont(juce::Font(juce::FontOptions(15.f, juce::Font::bold)));
+    mixLabel.setText("MIX", juce::dontSendNotification);
+    mixLabel.setFont(Fonts::inter(11.f, 0.14f));
+    mixLabel.setJustificationType(juce::Justification::centred);
+    mixLabel.setColour(juce::Label::textColourId, theme::muted);
     addAndMakeVisible(mixLabel);
-    mix.setSliderStyle(juce::Slider::LinearHorizontal);
-    mix.setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 22);
-    mix.setTextValueSuffix(" %");
-    addAndMakeVisible(mix);
-    mixAtt = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(proc.apvts, "mix", mix);
 
-    setSize(460, 400);
+    compAmtAtt = std::make_unique<APVTS::SliderAttachment>(proc.apvts, "comp_amount", compKnob);
+    fuzzAmtAtt = std::make_unique<APVTS::SliderAttachment>(proc.apvts, "dist_amount", fuzzKnob);
+    mixAtt     = std::make_unique<APVTS::SliderAttachment>(proc.apvts, "mix",         mixKnob);
+    compOnAtt  = std::make_unique<APVTS::ButtonAttachment>(proc.apvts, "comp_on", compOn);
+    fuzzOnAtt  = std::make_unique<APVTS::ButtonAttachment>(proc.apvts, "dist_on", fuzzOn);
+    filtOnAtt  = std::make_unique<APVTS::ButtonAttachment>(proc.apvts, "filt_on", filtOn);
+    boxOnAtt   = std::make_unique<APVTS::ButtonAttachment>(proc.apvts, "box_on",  boxOn);
+
+    setSize(620, 400);
+    setResizable(false, false);
+    startTimerHz(30);
 }
 
-void GuitarSuiteEditor::paint(juce::Graphics& g)
+void RogerThatEditor::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xff2b2b2b));
-    g.setColour(juce::Colours::white);
-    g.setFont(juce::Font(juce::FontOptions(18.f, juce::Font::bold)));
-    g.drawText(juce::String::fromUTF8("Guitar Suite 3.0 \xe2\x80\x94 Audition clone"), 0, 8, getWidth(), 24, juce::Justification::centred);
-    g.setColour(juce::Colour(0xff3c3c3c));
-    for (int i = 0; i < 5; ++i) g.fillRoundedRectangle(10.f, 44.f + i * 64.f, (float)getWidth() - 20.f, 58.f, 6.f);
+    g.fillAll(theme::bg);
+    drawPanelShadow(g, scope.getBounds().toFloat(), 0.f);
+
+    g.setFont(Fonts::mono(9.f, 0.18f));
+    g.setColour(theme::faint);
+    g.drawText("34", getWidth() - 60, getHeight() - 22, 44, 14, juce::Justification::centredRight);
 }
 
-void GuitarSuiteEditor::resized()
+void RogerThatEditor::resized()
 {
-    auto place = [this](Row& r, int y) {
-        r.title.setBounds(20, y, 140, 24);
-        r.on.setBounds(20, y + 26, 60, 24);
-        if (r.amtAtt) r.amount.setBounds(90, y + 26, getWidth() - 110, 24);
-        else          r.fixed.setBounds(90, y + 26, getWidth() - 110, 24);
-    };
-    place(comp, 48); place(filt, 112); place(dist, 176); place(box, 240);
-    mixLabel.setBounds(20, 304, 140, 24);
-    mix.setBounds(90, 330, getWidth() - 110, 24);
+    scope.setBounds(0, 0, getWidth(), 212);
+
+    // controls row, in signal order: COMP · FILTER · FUZZ · BOX · MIX
+    const int knobY = 242, labelY = 344, labelH = 26;
+    const int kw = Knob::sizePx;
+    const int xComp = 40, xFuzz = 236, xMix = 432;
+
+    compKnob.setBounds(xComp, knobY, kw, kw);
+    fuzzKnob.setBounds(xFuzz, knobY, kw, kw);
+    mixKnob .setBounds(xMix,  knobY, kw, kw);
+
+    compOn.setBounds(xComp + 10, labelY, kw - 20, labelH);
+    fuzzOn.setBounds(xFuzz + 10, labelY, kw - 20, labelH);
+    mixLabel.setBounds(xMix + 10, labelY, kw - 20, labelH);
+
+    const int knobCY = knobY + kw / 2;
+    const int pw = PillToggle::widthPx, ph = PillToggle::heightPx;
+    filtOn.setBounds((xComp + kw + xFuzz) / 2 - pw / 2, knobCY - ph / 2, pw, ph);
+    boxOn .setBounds((xFuzz + kw + xMix) / 2 - pw / 2, knobCY - ph / 2, pw, ph);
+}
+
+void RogerThatEditor::timerCallback()
+{
+    scope.repaint();
+    // a knob whose block is bypassed is dimmed
+    const float compA = compOn.getToggleState() ? 1.f : 0.45f;
+    const float fuzzA = fuzzOn.getToggleState() ? 1.f : 0.45f;
+    if (compKnob.getAlpha() != compA) compKnob.setAlpha(compA);
+    if (fuzzKnob.getAlpha() != fuzzA) fuzzKnob.setAlpha(fuzzA);
 }

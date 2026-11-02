@@ -1,27 +1,29 @@
 #pragma once
 #include "PluginProcessor.h"
+#include "Widgets.h"
 
-class GuitarSuiteEditor : public juce::AudioProcessorEditor
+class RogerThatEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:
-    explicit GuitarSuiteEditor(GuitarSuiteProcessor&);
-    ~GuitarSuiteEditor() override = default;
+    explicit RogerThatEditor(RogerThatProcessor&);
+    ~RogerThatEditor() override = default;
     void paint(juce::Graphics&) override;
     void resized() override;
 
 private:
+    void timerCallback() override;
 
-    struct Row {
-        juce::ToggleButton on; juce::Slider amount; juce::Label title, fixed;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> onAtt;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> amtAtt;
-    };
-    void setupRow(Row&, const juce::String& title, const juce::String& onId, const juce::String& amtId, const juce::String& fixedText);
+    using APVTS = juce::AudioProcessorValueTreeState;
+    RogerThatProcessor& proc;
 
-    GuitarSuiteProcessor& proc;
-    Row comp, filt, dist, box;
-    juce::Slider mix; juce::Label mixLabel;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> mixAtt;
+    rt::ScopeView scope;
+    rt::Knob compKnob, fuzzKnob, mixKnob;
+    rt::UnderlineToggle compOn { "COMP" }, fuzzOn { "FUZZ" };
+    rt::PillToggle filtOn { "FILTER" }, boxOn { "BOX" };
+    juce::Label mixLabel;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GuitarSuiteEditor)
+    std::unique_ptr<APVTS::SliderAttachment> compAmtAtt, fuzzAmtAtt, mixAtt;
+    std::unique_ptr<APVTS::ButtonAttachment> compOnAtt, fuzzOnAtt, filtOnAtt, boxOnAtt;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RogerThatEditor)
 };

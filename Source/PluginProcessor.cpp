@@ -3,22 +3,22 @@
 
 using APVTS = juce::AudioProcessorValueTreeState;
 
-APVTS::ParameterLayout GuitarSuiteProcessor::createLayout()
+APVTS::ParameterLayout RogerThatProcessor::createLayout()
 {
     APVTS::ParameterLayout l;
     auto pct = juce::NormalisableRange<float>(0.f, 100.f, 0.1f);
     // Defaults = the user's preset: Comp 100, Retro BP 2042/34, Garage Fuzz 70, Box 9, Mix 30
     l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"comp_on", 1}, "Compressor", true));
     l.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"comp_amount", 1}, "Compressor Amount", pct, 100.f));
-    l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"filt_on", 1}, "Filter (Retro BP 2042 Hz / Res 34)", true));
-    l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"dist_on", 1}, "Distortion (Garage Fuzz)", true));
-    l.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"dist_amount", 1}, "Distortion Amount", pct, 70.f));
-    l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"box_on", 1}, "Box Modeler (Model 9)", true));
+    l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"filt_on", 1}, "Filter", true));
+    l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"dist_on", 1}, "Fuzz", true));
+    l.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"dist_amount", 1}, "Fuzz Amount", pct, 70.f));
+    l.add(std::make_unique<juce::AudioParameterBool> (juce::ParameterID{"box_on", 1}, "Box", true));
     l.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{"mix", 1}, "Mix", pct, 30.f));
     return l;
 }
 
-GuitarSuiteProcessor::GuitarSuiteProcessor()
+RogerThatProcessor::RogerThatProcessor()
     : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
                                       .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       apvts(*this, nullptr, "PARAMS", createLayout())
@@ -30,21 +30,23 @@ GuitarSuiteProcessor::GuitarSuiteProcessor()
     pMix    = apvts.getRawParameterValue("mix");
 }
 
-void GuitarSuiteProcessor::prepareToPlay(double sampleRate, int)
+void RogerThatProcessor::prepareToPlay(double sampleRate, int)
 {
     currentSampleRate = sampleRate;
     for (auto& c : chains) c.prepare(sampleRate);
     setLatencySamples(gs::GuitarSuite::latencySamples);
+    scopeSamplesPerColumn = juce::jmax(1, (int) std::lround(sampleRate * ScopeHistory::columnSeconds));
+    scopeCount = 0; scopeInPeak = 0.f; scopeFxPeak = 0.f;
 }
 
-bool GuitarSuiteProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
+bool RogerThatProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
     const auto& in = layouts.getMainInputChannelSet(); const auto& out = layouts.getMainOutputChannelSet();
     if (in != out) return false;
     return in == juce::AudioChannelSet::mono() || in == juce::AudioChannelSet::stereo();
 }
 
-void GuitarSuiteProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void RogerThatProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
     gs::Params p;
@@ -60,20 +62,39 @@ void GuitarSuiteProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
     {
         chains[ch].setParams(p);
         float* d = buffer.getWritePointer(ch);
-        for (int i = 0; i < n; ++i) d[i] = chains[ch].process(d[i]);
+        if (ch == 0)
+        {
+            // channel 0 also feeds the waveform display
+            for (int i = 0; i < n; ++i)
+            {
+                const float x = d[i];
+                d[i] = chains[0].process(x);
+                scopeInPeak = juce::jmax(scopeInPeak, std::abs(x));
+                scopeFxPeak = juce::jmax(scopeFxPeak, std::abs(chains[0].lastWet));
+                if (++scopeCount >= scopeSamplesPerColumn)
+                {
+                    scope.push(scopeInPeak, scopeFxPeak);
+                    scopeCount = 0; scopeInPeak = 0.f; scopeFxPeak = 0.f;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < n; ++i) d[i] = chains[ch].process(d[i]);
+        }
     }
 }
 
-juce::AudioProcessorEditor* GuitarSuiteProcessor::createEditor() { return new GuitarSuiteEditor(*this); }
+juce::AudioProcessorEditor* RogerThatProcessor::createEditor() { return new RogerThatEditor(*this); }
 
-void GuitarSuiteProcessor::getStateInformation(juce::MemoryBlock& destData)
+void RogerThatProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
     if (auto xml = apvts.copyState().createXml()) copyXmlToBinary(*xml, destData);
 }
-void GuitarSuiteProcessor::setStateInformation(const void* data, int sizeInBytes)
+void RogerThatProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary(data, sizeInBytes))
         if (xml->hasTagName(apvts.state.getType())) apvts.replaceState(juce::ValueTree::fromXml(*xml));
 }
 
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new GuitarSuiteProcessor(); }
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter() { return new RogerThatProcessor(); }

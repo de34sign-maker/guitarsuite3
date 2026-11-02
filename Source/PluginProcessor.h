@@ -1,12 +1,34 @@
 #pragma once
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <array>
+#include <atomic>
 #include "../GuitarSuiteDSP.h"
 
-class GuitarSuiteProcessor : public juce::AudioProcessor
+// Lock-free history of peak levels for the waveform display: one column every ~4 ms.
+// Audio thread writes, UI thread reads; no locks.
+struct ScopeHistory
+{
+    static constexpr int size = 2048;              // columns kept (power of two)
+    static constexpr double columnSeconds = 0.004; // time per column
+
+    std::array<std::atomic<float>, size> in {};    // peak |input| in the column
+    std::array<std::atomic<float>, size> fx {};    // peak |wet path x mix| in the column
+    std::atomic<int> writeIndex { 0 };             // next column to write
+
+    void push(float inPeak, float fxPeak) noexcept
+    {
+        const int w = writeIndex.load(std::memory_order_relaxed);
+        in[(size_t) w].store(inPeak, std::memory_order_relaxed);
+        fx[(size_t) w].store(fxPeak, std::memory_order_relaxed);
+        writeIndex.store((w + 1) & (size - 1), std::memory_order_release);
+    }
+};
+
+class RogerThatProcessor : public juce::AudioProcessor
 {
 public:
-    GuitarSuiteProcessor();
-    ~GuitarSuiteProcessor() override = default;
+    RogerThatProcessor();
+    ~RogerThatProcessor() override = default;
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
@@ -16,7 +38,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
 
-    const juce::String getName() const override { return "GuitarSuite3"; }
+    const juce::String getName() const override { return "Roger That"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -33,6 +55,7 @@ public:
 
     juce::AudioProcessorValueTreeState apvts;
     double currentSampleRate = 44100.0;
+    ScopeHistory scope;
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
@@ -44,5 +67,10 @@ private:
     std::atomic<float>* pBoxOn;
     std::atomic<float>* pMix;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(GuitarSuiteProcessor)
+    // scope accumulation (audio thread only)
+    int   scopeSamplesPerColumn = 176;
+    int   scopeCount = 0;
+    float scopeInPeak = 0.f, scopeFxPeak = 0.f;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RogerThatProcessor)
 };

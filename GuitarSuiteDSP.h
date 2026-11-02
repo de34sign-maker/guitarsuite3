@@ -153,9 +153,12 @@ public:
         if (p.filtOn) y = filt.process(y);
         if (p.distOn) y = fuzz.process(y);
         if (p.boxOn)  y = box.process(y);
-        float out = dry * dryZ + wet * y; dryZ = x;
+        lastWet = wet * y;
+        float out = dry * dryZ + lastWet; dryZ = x;
         return out;
     }
+    // The processed part of the last output sample (wet path x Mix) — for the UI scope only.
+    float lastWet = 0.f;
 private:
     Params p; Compressor comp; FIR filt; Fuzz fuzz; FIR box; float wet = 0.3f, dry = 0.7f, dryZ = 0.f;
 };
