@@ -20,8 +20,10 @@ endif()
 
 if(APPLE)
     set(RT_FORMATS AU VST3 Standalone)
+    set(RT_COPY_AFTER_BUILD TRUE)
 else()
     set(RT_FORMATS VST3 Standalone)
+    set(RT_COPY_AFTER_BUILD FALSE)
 endif()
 
 # Fonts embedded into the binary (Inter and JetBrains Mono, both SIL Open Font License — see Assets/LICENSE-*.txt)
@@ -44,7 +46,7 @@ juce_add_plugin(RogerThat
     DESCRIPTION "Radio / telephone voice distortion"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
-    COPY_PLUGIN_AFTER_BUILD TRUE     # installs into ~/Library/Audio/Plug-Ins on macOS
+    COPY_PLUGIN_AFTER_BUILD ${RT_COPY_AFTER_BUILD}   # macOS: installs into ~/Library/Audio/Plug-Ins; Windows: off (needs admin)
     VST3_CATEGORIES Fx Distortion
     AU_MAIN_TYPE kAudioUnitType_Effect)
 
