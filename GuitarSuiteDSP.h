@@ -1,6 +1,6 @@
 // GuitarSuiteDSP.h — black-box clone of Adobe Audition 3.0 "Guitar Suite"
 // Chain: Compressor -> Filter (Retro BP) -> Distortion (Garage Fuzz) -> Box Modeler -> Mix
-// Measured at 48 kHz. Pure header, no dependencies.
+// Measured at 44.1 kHz (2 Nov 2026). Pure header, no dependencies.
 #pragma once
 #include <cmath>
 #include <vector>
@@ -14,7 +14,7 @@ namespace gs {
 
 struct Params {
     bool  compOn = true;   float compAmount = 100.f;   // 0..100
-    bool  filtOn = true;                               // fixed: Retro BP 2042 Hz / res 31 (measured)
+    bool  filtOn = true;                               // fixed: Retro BP 2042 Hz / res 34 (measured)
     bool  distOn = true;   float distAmount = 70.f;    // 0..100
     bool  boxOn  = true;                               // fixed: Model 9
     float mix    = 30.f;                               // 0..100 (%)
@@ -24,7 +24,7 @@ struct Params {
 inline float dbToLin(float db) { return std::pow(10.f, db / 20.f); }
 inline float linToDb(float v)  { return 20.f * std::log10(std::max(v, 1e-9f)); }
 
-// FIR with ring buffer (direct form). Taps measured, lengths 120 / 256 — cheap enough.
+// FIR with ring buffer (direct form). Taps measured, lengths 111 / 256 — cheap enough.
 class FIR {
 public:
     void set(const float* taps, size_t n) { h.assign(taps, taps + n); buf.assign(n, 0.f); pos = 0; }
@@ -42,7 +42,7 @@ private:
 };
 
 
-// Resample a measured impulse response (48 kHz) to the host sample rate with a windowed sinc,
+// Resample a measured impulse response (kDataSampleRate) to the host sample rate with a windowed sinc,
 // preserving the frequency response in Hz. Done once in prepare(); IRs are short.
 inline std::vector<float> resampleIR(const float* h, size_t n, double srOld, double srNew)
 {
@@ -80,10 +80,12 @@ public:
     void reset() { env = 0.f; gain = 1.f; }
     void setAmount(float a) {
         a = std::clamp(a, 0.f, 100.f);
-        // measured: 50 -> thr -14.9 / ratio 3.4 / makeup 0 ; 100 -> thr -28.667 / ratio 6.04 / makeup +4.458
-        thrDb  = -0.28667f * a;
-        ratio  = 1.f + 0.0504f * a;
-        makeup = std::max(0.f, (a - 50.f) * (4.458f / 50.f));
+        // Measured at 44.1 kHz on 1 kHz steps, amounts 25/45/50/55/75/100 (residual < 0.03 dB):
+        //   threshold  = -0.29874*a + 0.13 dBFS   ratio = 1.9291 + 0.03032*a   makeup = a/20 dB
+        // Audition itself drops makeup to 0 dB at exactly a == 50 (a bug) — not reproduced.
+        thrDb  = -0.29874f * a + 0.1304f;
+        ratio  = 1.9291f + 0.03032f * a;
+        makeup = a / 20.f;
         mkLin  = dbToLin(makeup);
         slope  = 1.f - 1.f / ratio;
     }
@@ -98,8 +100,8 @@ public:
         return x * gain;
     }
 private:
-    double fs = 48000; float envRel = 0, gainAtt = 0, gainRel = 0;
-    float env = 0, gain = 1; float thrDb = -28.667f, ratio = 6.04f, makeup = 4.458f, mkLin = 1.f, slope = 0.8f;
+    double fs = 44100; float envRel = 0, gainAtt = 0, gainRel = 0;
+    float env = 0, gain = 1; float thrDb = -29.74f, ratio = 4.96f, makeup = 5.f, mkLin = 1.f, slope = 0.8f;
 };
 
 // Garage Fuzz: y = 0.31623 * tanh(k(amount) * x). log k interpolated through measured points.
@@ -107,13 +109,14 @@ class Fuzz {
 public:
     void setAmount(float a) {
         a = std::clamp(a, 0.f, 100.f);
-        // piecewise-linear in log k over measured points; linear extrapolation below 30
+        // piecewise-linear in log k over measured points (10/30/50/70/90/100); linear extrapolation below 10
+        constexpr int N = sizeof(kFuzzAmount) / sizeof(float);
         float lk;
         if (a <= kFuzzAmount[0]) {
             float s = (kFuzzLogK[1] - kFuzzLogK[0]) / (kFuzzAmount[1] - kFuzzAmount[0]);
             lk = kFuzzLogK[0] + (a - kFuzzAmount[0]) * s;
         } else {
-            int i = 0; while (i < 2 && a > kFuzzAmount[i + 1]) ++i;
+            int i = 0; while (i < N - 2 && a > kFuzzAmount[i + 1]) ++i;
             float t = (a - kFuzzAmount[i]) / (kFuzzAmount[i + 1] - kFuzzAmount[i]);
             lk = kFuzzLogK[i] + t * (kFuzzLogK[i + 1] - kFuzzLogK[i]);
         }
@@ -129,8 +132,8 @@ class GuitarSuite {
 public:
     void prepare(double sr) {
         comp.prepare(sr);
-        auto f = resampleIR(kFilterFIR_2042_res31, sizeof(kFilterFIR_2042_res31) / sizeof(float), 48000.0, sr);
-        auto b = resampleIR(kBoxIR_model9, sizeof(kBoxIR_model9) / sizeof(float), 48000.0, sr);
+        auto f = resampleIR(kFilterFIR_2042_res34, sizeof(kFilterFIR_2042_res34) / sizeof(float), kDataSampleRate, sr);
+        auto b = resampleIR(kBoxIR_model9, sizeof(kBoxIR_model9) / sizeof(float), kDataSampleRate, sr);
         filt.set(f.data(), f.size());
         box.set(b.data(), b.size());
         setParams(p);

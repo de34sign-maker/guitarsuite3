@@ -32,7 +32,7 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
     juce::AudioProcessorValueTreeState apvts;
-    double currentSampleRate = 48000.0;
+    double currentSampleRate = 44100.0;
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();

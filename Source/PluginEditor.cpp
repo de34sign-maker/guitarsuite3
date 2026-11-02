@@ -30,7 +30,7 @@ void GuitarSuiteEditor::setupRow(Row& r, const juce::String& title, const juce::
 GuitarSuiteEditor::GuitarSuiteEditor(GuitarSuiteProcessor& p) : AudioProcessorEditor(&p), proc(p)
 {
     setupRow(comp, "Compressor", "comp_on", "comp_amount", "");
-    setupRow(filt, "Filter", "filt_on", "", "Retro  /  Bandpass  /  2042 Hz  /  Resonance 31 %");
+    setupRow(filt, "Filter", "filt_on", "", "Retro  /  Bandpass  /  2042 Hz  /  Resonance 34 %");
     setupRow(dist, "Distortion", "dist_on", "dist_amount", "");
     setupRow(box,  "Box Modeler", "box_on", "", "Model 9");
 
@@ -54,8 +54,8 @@ GuitarSuiteEditor::GuitarSuiteEditor(GuitarSuiteProcessor& p) : AudioProcessorEd
 void GuitarSuiteEditor::timerCallback()
 {
     const double sr = proc.currentSampleRate;
-    srWarn.setText(std::abs(sr - 48000.0) < 1.0 ? juce::String()
-                   : "Measured at 48 kHz, recalculated for " + juce::String(sr / 1000.0, 1) + " kHz session",
+    srWarn.setText(std::abs(sr - kDataSampleRate) < 1.0 ? juce::String()
+                   : "Measured at 44.1 kHz, recalculated for " + juce::String(sr / 1000.0, 1) + " kHz session",
                    juce::dontSendNotification);
 }
 
