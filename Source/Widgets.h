@@ -27,6 +27,7 @@ struct Fonts
 {
     static juce::Font inter(float px, float kerning = 0.f, bool semibold = false);
     static juce::Font mono(float px, float kerning = 0.f);
+    static juce::Typeface::Ptr interTypeface(bool semibold = false);
 };
 
 // Soft drop shadow helpers (drawn by the component that owns the surrounding space)
@@ -68,10 +69,10 @@ public:
     void paintButton(juce::Graphics&, bool highlighted, bool down) override;
 };
 
-// ---- Brand mark: a dot with two signal arcs (drawn as a path, scales with the box) --------------
-void drawBrandMark(juce::Graphics& g, juce::Rectangle<float> box, juce::Colour colour);
+// ---- Small "open outside" arrow (↗), the plugin's "this is clickable / this is a link" glyph ----
+void drawArrowOut(juce::Graphics& g, juce::Rectangle<float> box, juce::Colour colour, float thickness = 1.5f);
 
-// ---- Bottom-right "vst34" badge; click opens the About panel ----------------------------------
+// ---- Bottom-right "↗ vst34" badge; click opens the About panel ---------------------------------
 class BrandButton : public juce::Button
 {
 public:
@@ -80,14 +81,15 @@ public:
     void paintButton(juce::Graphics&, bool highlighted, bool down) override;
 };
 
-// ---- Link pill inside the About panel (opens a URL) -------------------------------------------
-class LinkPill : public juce::Button
+// ---- One link row inside the About panel: name · address · ↗ (opens a URL) --------------------
+class LinkRow : public juce::Button
 {
 public:
-    LinkPill(const juce::String& text, const juce::String& url);
+    LinkRow(const juce::String& name, const juce::String& shownAddress, const juce::String& url, bool lastRow);
     void paintButton(juce::Graphics&, bool highlighted, bool down) override;
 private:
-    juce::String url;
+    juce::String shown, url;
+    bool last;
 };
 
 // ---- About overlay: who made the plugin and where to find the artist --------------------------
@@ -106,10 +108,11 @@ public:
 
 private:
     juce::Rectangle<int> card;
-    LinkPill spotify   { "Spotify",   "https://open.spotify.com/artist/4WJKwDv6cDbc1hDyL0xnBg" };
-    LinkPill telegram  { "Telegram",  "https://t.me/callmerayman" };
-    LinkPill instagram { "Instagram", "https://www.instagram.com/callme34_/" };
-    LinkPill email     { "Email",     "mailto:iamyevheniibondar@gmail.com" };
+    juce::Image icon;
+    LinkRow spotify   { "Spotify",   "open.spotify.com/artist/4WJKwDv6cDbc1hDyL0xnBg", "https://open.spotify.com/artist/4WJKwDv6cDbc1hDyL0xnBg", false };
+    LinkRow telegram  { "Telegram",  "t.me/callmerayman",                               "https://t.me/callmerayman", false };
+    LinkRow instagram { "Instagram", "instagram.com/callme34_",                         "https://www.instagram.com/callme34_/", false };
+    LinkRow email     { "Email",     "iamyevheniibondar@gmail.com",                     "mailto:iamyevheniibondar@gmail.com", true };
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AboutPanel)
 };
 

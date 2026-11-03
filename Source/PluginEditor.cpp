@@ -48,7 +48,8 @@ void RogerThatEditor::resized()
     // controls row, in signal order: COMP · FILTER · FUZZ · BOX · MIX
     const int knobY = 242, labelY = 344, labelH = 26;
     const int kw = Knob::sizePx;
-    const int xComp = 40, xFuzz = 236, xMix = 432;
+    // row centred in the window: knob discs (72) and pills (72) with 40 px between them
+    const int xComp = 36, xFuzz = 260, xMix = 484;
 
     compKnob.setBounds(xComp, knobY, kw, kw);
     fuzzKnob.setBounds(xFuzz, knobY, kw, kw);
