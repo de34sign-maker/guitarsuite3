@@ -98,6 +98,7 @@ jobs:
              (Explorer will ask for administrator permission — click Continue).
           2. Restart your DAW (FL Studio, Ableton, Cubase, Studio One, Reaper...) and rescan plugins if needed.
              Look for RogerThat by vst34.
+             Too small on your screen? Click "vst34" in the top-right corner of the plugin -> UI SIZE.
 
           RogerThat.exe is a standalone version for a quick test without a DAW (uses your mic / line input).
 
