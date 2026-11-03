@@ -28,9 +28,10 @@ jobs:
           codesign --force --deep -s - "$ART/VST3/RogerThat.vst3"
           codesign --force --deep -s - "$ART/AU/RogerThat.component"
           codesign --force --deep -s - "$ART/Standalone/RogerThat.app"
-          mkdir -p dist
-          cp -R "$ART/VST3/RogerThat.vst3" "$ART/AU/RogerThat.component" "$ART/Standalone/RogerThat.app" dist/
-          cat > dist/УСТАНОВКА.txt <<'EOF'
+          PKG=RogerThat-macOS
+          mkdir -p "$PKG"
+          cp -R "$ART/VST3/RogerThat.vst3" "$ART/AU/RogerThat.component" "$ART/Standalone/RogerThat.app" "$PKG/"
+          cat > "$PKG/УСТАНОВКА.txt" <<'EOF'
           Roger That (vst34) — установка на macOS
 
           1. Скопировать RogerThat.vst3 в /Library/Audio/Plug-Ins/VST3/
@@ -41,7 +42,9 @@ jobs:
              sudo xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/RogerThat.vst3
           3. Перезапустить DAW. Плагин: Roger That (производитель vst34).
           EOF
-          cd dist && ditto -c -k --keepParent --sequesterRsrc . ../RogerThat-macOS.zip
+          # --keepParent: в архив попадает сама папка RogerThat-macOS, при распаковке она и появится
+          ditto -c -k --keepParent --sequesterRsrc "$PKG" RogerThat-macOS.zip
+          unzip -l RogerThat-macOS.zip | head -20
 
       - uses: actions/upload-artifact@v4
         with:
