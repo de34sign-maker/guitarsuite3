@@ -177,7 +177,7 @@ public:
     ~StripBar() override
     {
         holder.deviceManager.removeChangeListener(this);
-        if (dialog != nullptr) dialog->exitModalState(0);
+        dialog = nullptr;   // owned here, destroyed before the holder's device manager
     }
 
     void paint(Graphics& g) override
@@ -222,22 +222,24 @@ private:
 
     void openSettings()
     {
-        if (dialog != nullptr) { dialog->toFront(true); return; }
-
-        DialogWindow::LaunchOptions o;
-        o.content.setOwned(new SettingsContent(holder));
-        o.dialogTitle = "Audio Settings";
-        o.dialogBackgroundColour = theme::bg;
-        o.escapeKeyTriggersCloseButton = true;
-        o.useNativeTitleBar = true;
-        o.resizable = false;
-        dialog = o.launchAsync();
+        if (dialog == nullptr)
+        {
+            // non-modal, owned by the strip: no deferred deletion by the modal manager at quit
+            dialog = std::make_unique<DialogWindow>("Audio Settings", theme::bg, true, true);
+            dialog->setUsingNativeTitleBar(true);
+            dialog->setContentOwned(new SettingsContent(holder), true);
+            dialog->setResizable(false, false);
+            if (auto* top = getTopLevelComponent())
+                dialog->centreAroundComponent(top, dialog->getWidth(), dialog->getHeight());
+        }
+        dialog->setVisible(true);    // the close button only hides it
+        dialog->toFront(true);
     }
 
     StandalonePluginHolder& holder;
     Value muted;
     SettingsButton settings;
-    Component::SafePointer<DialogWindow> dialog;
+    std::unique_ptr<DialogWindow> dialog;
 };
 
 // ---- Window content: strip + plugin editor ------------------------------------------------------
@@ -268,6 +270,16 @@ public:
         auto r = getLocalBounds();
         strip.setBounds(r.removeFromTop(StripBar::heightPx));
         if (editor != nullptr) editor->setTopLeftPosition(r.getTopLeft());
+    }
+
+    // the editor changes size when the user picks another UI size: follow it (the window follows us)
+    void childBoundsChanged(Component* child) override
+    {
+        if (child == editor.get() && editor != nullptr)
+        {
+            const int w = editor->getWidth(), h = editor->getHeight() + StripBar::heightPx;
+            if (w != getWidth() || h != getHeight()) setSize(w, h);
+        }
     }
 
 private:
@@ -331,7 +343,8 @@ public:
 
     void shutdown() override
     {
-        window = nullptr;          // destroys the editor before the processor
+        if (window != nullptr) window->setVisible(false);
+        window = nullptr;          // destroys the editor (and the settings dialog) before the processor
         holder = nullptr;
         LookAndFeel::setDefaultLookAndFeel(nullptr);
         appProperties.saveIfNeeded();

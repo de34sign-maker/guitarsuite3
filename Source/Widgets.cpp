@@ -7,7 +7,8 @@ namespace rt
 // ---- Fonts -------------------------------------------------------------------------------------
 static juce::Typeface::Ptr typefaceFor(int which)
 {
-    static juce::Typeface::Ptr cache[3];
+    // heap-allocated on purpose: a static Typeface::Ptr would be destroyed after JUCE has shut down
+    static juce::Typeface::Ptr* cache = new juce::Typeface::Ptr[3];
     if (cache[which] == nullptr)
     {
         switch (which)
@@ -215,15 +216,15 @@ void BrandButton::paintButton(juce::Graphics& g, bool highlighted, bool down)
     auto r = getLocalBounds().toFloat();
     if (down) r.translate(0.f, 1.f);
 
-    auto font = Fonts::mono(9.f, 0.18f);
+    auto font = Fonts::mono(11.f, 0.16f);
     g.setFont(font);
     const float textW = juce::GlyphArrangement::getStringWidth(font, "vst34");
-    const float arrowS = 8.f, gap = 5.f;
+    const float arrowS = 10.f, gap = 6.f;
     const float x0 = r.getRight() - (arrowS + gap + textW);
     const float cy = r.getCentreY();
 
-    drawArrowOut(g, { x0, cy - arrowS * 0.5f, arrowS, arrowS }, theme::accent, 1.5f);
-    g.setColour(highlighted ? theme::ink : theme::faint);
+    drawArrowOut(g, { x0, cy - arrowS * 0.5f, arrowS, arrowS }, theme::accent, 1.7f);
+    g.setColour(highlighted ? theme::ink : theme::muted);
     g.drawText("vst34", juce::Rectangle<float>(x0 + arrowS + gap, r.getY(), textW + 2.f, r.getHeight()), juce::Justification::centredLeft);
 }
 
@@ -262,7 +263,23 @@ AboutPanel::AboutPanel()
     setWantsKeyboardFocus(true);
     icon = juce::ImageCache::getFromMemory(RogerThatAssets::walkie_256_png, RogerThatAssets::walkie_256_pngSize);
     for (auto* b : { &spotify, &telegram, &instagram, &email }) addAndMakeVisible(b);
+
+    const std::pair<PillToggle*, float> scales[] { { &scale100, 1.f }, { &scale125, 1.25f }, { &scale150, 1.5f }, { &scale200, 2.f } };
+    for (auto& [b, v] : scales)
+    {
+        b->setRadioGroupId(34);
+        const float value = v;
+        b->onClick = [this, value] { if (onScaleChosen) onScaleChosen(value); };
+        addAndMakeVisible(b);
+    }
+    scale100.setToggleState(true, juce::dontSendNotification);
     setVisible(false);
+}
+
+void AboutPanel::setScale(float s)
+{
+    PillToggle* which = s >= 1.9f ? &scale200 : s >= 1.4f ? &scale150 : s >= 1.2f ? &scale125 : &scale100;
+    which->setToggleState(true, juce::dontSendNotification);
 }
 
 void AboutPanel::open()
@@ -276,12 +293,22 @@ void AboutPanel::close() { setVisible(false); }
 
 void AboutPanel::resized()
 {
-    const int cw = 480, ch = 352, pad = 32;
+    const int cw = 480, ch = 378, pad = 28;
     card = getLocalBounds().withSizeKeepingCentre(cw, ch);
 
+    // UI size pills: PillToggle draws its pill inside a 6 px shadow margin, so 84x44 bounds = a 72x32 pill
+    const int pillW = PillToggle::widthPx, boundsH = 32 + 12;
+    int x = card.getX() + pad - 6;
+    const int py = card.getY() + 158 - 6;
+    for (auto* b : { &scale100, &scale125, &scale150, &scale200 })
+    {
+        b->setBounds(x, py, pillW, boundsH);
+        x += pillW - 12 + 8;
+    }
+
     // four link rows at the bottom of the card
-    const int rowH = 40;
-    int y = card.getBottom() - 24 - rowH * 4;
+    const int rowH = 36;
+    int y = card.getBottom() - 20 - rowH * 4;
     for (auto* b : { &spotify, &telegram, &instagram, &email })
     {
         b->setBounds(card.getX() + pad, y, cw - pad * 2, rowH);
@@ -299,11 +326,11 @@ void AboutPanel::paint(juce::Graphics& g)
     g.setColour(theme::panel);
     g.fillPath(p);
 
-    const float pad = 32.f;
-    const float x = c.getX() + pad, y = c.getY() + pad;
+    const float pad = 28.f;
+    const float x = c.getX() + pad, y = c.getY() + 24.f;
 
-    // header: purchased icon (52 px, kept in proportion) + name / "vst34 · version"
-    const float iconH = 52.f;
+    // header: purchased icon (48 px, kept in proportion) + name / "vst34 · version"
+    const float iconH = 48.f;
     const float iconW = icon.isValid() ? iconH * (float) icon.getWidth() / (float) icon.getHeight() : iconH;
     if (icon.isValid())
     {
@@ -313,14 +340,14 @@ void AboutPanel::paint(juce::Graphics& g)
     const float tx = x + iconW + 18.f;
     g.setFont(Fonts::inter(18.f, 0.f, true));
     g.setColour(theme::ink);
-    g.drawText("RogerThat", juce::Rectangle<float>(tx, y + 4.f, 240.f, 22.f), juce::Justification::centredLeft);
+    g.drawText("RogerThat", juce::Rectangle<float>(tx, y + 2.f, 240.f, 22.f), juce::Justification::centredLeft);
     g.setFont(Fonts::mono(11.f, 0.14f));
     g.setColour(theme::faint);
-    g.drawText(juce::String::fromUTF8("vst34 \xc2\xb7 v") + JucePlugin_VersionString,   // "vst34 · v1.4.0"
-               juce::Rectangle<float>(tx, y + 32.f, 240.f, 14.f), juce::Justification::centredLeft);
+    g.drawText(juce::String::fromUTF8("vst34 \xc2\xb7 v") + JucePlugin_VersionString,   // "vst34 · v1.5.0"
+               juce::Rectangle<float>(tx, y + 30.f, 240.f, 14.f), juce::Justification::centredLeft);
 
     // close cross, top-right
-    const auto cr = juce::Rectangle<float>(c.getRight() - pad - 20.f, c.getY() + pad - 2.f, 24.f, 24.f);
+    const auto cr = juce::Rectangle<float>(c.getRight() - pad - 20.f, c.getY() + 22.f, 24.f, 24.f);
     const bool overClose = cr.expanded(6.f).contains(getMouseXYRelative().toFloat());
     g.setColour(overClose ? theme::ink : theme::faint);
     const float k = 4.5f; const auto cc = cr.getCentre();
@@ -328,20 +355,25 @@ void AboutPanel::paint(juce::Graphics& g)
     g.drawLine(cc.x - k, cc.y + k, cc.x + k, cc.y - k, 1.6f);
 
     // two columns: creator / artist
-    const float y2 = y + iconH + 28.f;
+    const float y2 = c.getY() + 92.f;
     const float colW = (c.getWidth() - pad * 2.f) * 0.5f;
-    g.setFont(Fonts::inter(11.f, 0.14f)); g.setColour(theme::faint);
+    auto caption = Fonts::inter(11.f, 0.14f);
+    g.setFont(caption); g.setColour(theme::faint);
     g.drawText("CREATED BY", juce::Rectangle<float>(x, y2, colW, 14.f), juce::Justification::centredLeft);
     g.drawText("ARTIST",     juce::Rectangle<float>(x + colW, y2, colW, 14.f), juce::Justification::centredLeft);
     g.setFont(Fonts::inter(15.f, 0.f, true)); g.setColour(theme::ink);
-    g.drawText("Yevhenii Bondar", juce::Rectangle<float>(x, y2 + 20.f, colW, 20.f), juce::Justification::centredLeft);
+    g.drawText("Yevhenii Bondar", juce::Rectangle<float>(x, y2 + 18.f, colW, 20.f), juce::Justification::centredLeft);
     g.drawText(juce::String::fromUTF8("\xd0\xa0\x33\xd0\x99\xd0\x9c\x34\xd0\x9d"), // Р3ЙМ4Н
-               juce::Rectangle<float>(x + colW, y2 + 20.f, colW, 20.f), juce::Justification::centredLeft);
+               juce::Rectangle<float>(x + colW, y2 + 18.f, colW, 20.f), juce::Justification::centredLeft);
+
+    // UI size caption (pills are child components placed in resized())
+    g.setFont(caption); g.setColour(theme::faint);
+    g.drawText("UI SIZE", juce::Rectangle<float>(x, c.getY() + 140.f, colW, 14.f), juce::Justification::centredLeft);
 }
 
 void AboutPanel::mouseDown(const juce::MouseEvent& e)
 {
-    const auto closeBox = juce::Rectangle<int>(card.getRight() - 32 - 26, card.getY() + 32 - 8, 36, 36);
+    const auto closeBox = juce::Rectangle<int>(card.getRight() - 28 - 26, card.getY() + 16, 36, 36);
     if (! card.contains(e.getPosition()) || closeBox.contains(e.getPosition()))
         close();
 }

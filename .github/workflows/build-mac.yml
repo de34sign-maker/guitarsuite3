@@ -45,6 +45,7 @@ jobs:
           2. Open Terminal and run this line (removes the "downloaded from the internet" flag):
              sudo xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/RogerThat.vst3
           3. Restart your DAW. Look for RogerThat by vst34.
+             Too small on your screen? Click "vst34" in the top-right corner of the plugin -> UI SIZE.
 
           STANDALONE APP (optional)
           RogerThat.app runs the effect without a DAW: mic in -> RogerThat -> headphones out.

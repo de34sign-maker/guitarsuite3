@@ -76,7 +76,7 @@ void drawArrowOut(juce::Graphics& g, juce::Rectangle<float> box, juce::Colour co
 class BrandButton : public juce::Button
 {
 public:
-    static constexpr int widthPx = 70, heightPx = 20;
+    static constexpr int widthPx = 84, heightPx = 22;
     BrandButton();
     void paintButton(juce::Graphics&, bool highlighted, bool down) override;
 };
@@ -106,9 +106,14 @@ public:
     void open();
     void close();
 
+    // UI size: 100 / 125 / 150 / 200 %
+    std::function<void(float)> onScaleChosen;
+    void setScale(float s);
+
 private:
     juce::Rectangle<int> card;
     juce::Image icon;
+    PillToggle scale100 { "100%" }, scale125 { "125%" }, scale150 { "150%" }, scale200 { "200%" };
     LinkRow spotify   { "Spotify",   "open.spotify.com/artist/4WJKwDv6cDbc1hDyL0xnBg", "https://open.spotify.com/artist/4WJKwDv6cDbc1hDyL0xnBg", false };
     LinkRow telegram  { "Telegram",  "t.me/callmerayman",                               "https://t.me/callmerayman", false };
     LinkRow instagram { "Instagram", "instagram.com/callme34_",                         "https://www.instagram.com/callme34_/", false };
