@@ -58,7 +58,6 @@ jobs:
           vst34
           Created by Yevhenii Bondar (Р3ЙМ4Н)
           iamyevheniibondar@gmail.com
-          Icon: Font Awesome Free (CC BY 4.0)
           EOF
           # --keepParent: в архив попадает сама папка «RogerThat-macOS», при распаковке она и появится
           ditto -c -k --keepParent --sequesterRsrc "$PKG" RogerThat-macOS.zip
@@ -105,7 +104,6 @@ jobs:
           vst34
           Created by Yevhenii Bondar (Р3ЙМ4Н)
           iamyevheniibondar@gmail.com
-          Icon: Font Awesome Free (CC BY 4.0)
           "@
           [IO.File]::WriteAllText("$pkg/README.txt", $txt, (New-Object System.Text.UTF8Encoding $true))
           Compress-Archive -Path $pkg -DestinationPath RogerThat-Windows.zip
