@@ -33,16 +33,25 @@ jobs:
           PKG="RogerThat-macOS"
           mkdir -p "$PKG"
           cp -R "$ART/VST3/RogerThat.vst3" "$ART/AU/RogerThat.component" "$ART/Standalone/RogerThat.app" "$PKG/"
-          cat > "$PKG/УСТАНОВКА.txt" <<'EOF'
-          RogerThat (vst34) — установка на macOS
+          cat > "$PKG/README.txt" <<'EOF'
+          RogerThat — radio / walkie-talkie voice effect
+          macOS (VST3 + AU + Standalone)
 
-          1. Скопировать RogerThat.vst3 в /Library/Audio/Plug-Ins/VST3/
-             (Finder: Переход -> Переход к папке... -> вставить путь).
-             Если там лежит старый GuitarSuite3.vst3 — удалить его, это тот же плагин.
-             AU-версия (RogerThat.component) — в /Library/Audio/Plug-Ins/Components/, нужна только для Logic/GarageBand.
-          2. Открыть Терминал и выполнить (снимает пометку «скачано из интернета»):
+          INSTALL
+          1. Copy RogerThat.vst3 to /Library/Audio/Plug-Ins/VST3/
+             (Finder: Go -> Go to Folder... -> paste the path).
+             If an old GuitarSuite3.vst3 is there, delete it — it is the same plugin.
+             RogerThat.component (AU) goes to /Library/Audio/Plug-Ins/Components/ — only needed for Logic / GarageBand.
+          2. Open Terminal and run this line (removes the "downloaded from the internet" flag):
              sudo xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/RogerThat.vst3
-          3. Перезапустить DAW. Плагин: RogerThat (производитель vst34).
+          3. Restart your DAW. Look for RogerThat by vst34.
+
+          RogerThat.app is a standalone version for a quick test without a DAW.
+
+          --
+          vst34
+          Created by Yevhenii Bondar (Р3ЙМ4Н)
+          iamyevheniibondar@gmail.com
           EOF
           # --keepParent: в архив попадает сама папка «RogerThat-macOS», при распаковке она и появится
           ditto -c -k --keepParent --sequesterRsrc "$PKG" RogerThat-macOS.zip
@@ -74,15 +83,23 @@ jobs:
           Copy-Item -Recurse "$art/VST3/RogerThat.vst3" "$pkg/"
           Copy-Item "$art/Standalone/RogerThat.exe" "$pkg/"
           $txt = @"
-          RogerThat (vst34) — установка на Windows
+          RogerThat — radio / walkie-talkie voice effect
+          Windows (VST3 + Standalone)
 
-          1. Скопировать папку RogerThat.vst3 целиком в C:\Program Files\Common Files\VST3\
-             (Проводник спросит разрешение администратора — нажать «Продолжить»).
-          2. Перезапустить DAW (FL Studio, Ableton, Cubase, Studio One, Reaper...) и при необходимости
-             пересканировать плагины. Плагин: RogerThat (производитель vst34).
-          RogerThat.exe — автономная версия для быстрой проверки без DAW (звук с микрофона/линейного входа).
+          INSTALL
+          1. Copy the whole RogerThat.vst3 folder to C:\Program Files\Common Files\VST3\
+             (Explorer will ask for administrator permission — click Continue).
+          2. Restart your DAW (FL Studio, Ableton, Cubase, Studio One, Reaper...) and rescan plugins if needed.
+             Look for RogerThat by vst34.
+
+          RogerThat.exe is a standalone version for a quick test without a DAW (uses your mic / line input).
+
+          --
+          vst34
+          Created by Yevhenii Bondar (Р3ЙМ4Н)
+          iamyevheniibondar@gmail.com
           "@
-          [IO.File]::WriteAllText("$pkg/УСТАНОВКА.txt", $txt, (New-Object System.Text.UTF8Encoding $true))
+          [IO.File]::WriteAllText("$pkg/README.txt", $txt, (New-Object System.Text.UTF8Encoding $true))
           Compress-Archive -Path $pkg -DestinationPath RogerThat-Windows.zip
           Get-ChildItem RogerThat-Windows.zip
 
@@ -110,4 +127,4 @@ jobs:
           gh release delete latest --cleanup-tag -y || true
           gh release create latest RogerThat-macOS.zip RogerThat-Windows.zip \
             --title "RogerThat (latest build)" \
-            --notes "macOS: VST3 + AU + Standalone (arm64+x86_64, ad-hoc signed). Windows: VST3 + Standalone (x64). См. УСТАНОВКА.txt внутри архива."
+            --notes "macOS: VST3 + AU + Standalone (arm64+x86_64, ad-hoc signed). Windows: VST3 + Standalone (x64). See README.txt inside the archive."
