@@ -46,7 +46,13 @@ jobs:
              sudo xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/RogerThat.vst3
           3. Restart your DAW. Look for RogerThat by vst34.
 
-          RogerThat.app is a standalone version for a quick test without a DAW.
+          STANDALONE APP (optional)
+          RogerThat.app runs the effect without a DAW: mic in -> RogerThat -> headphones out.
+          macOS will block it the first time ("Apple could not verify..."). To allow it:
+            System Settings -> Privacy & Security -> scroll down -> "Open Anyway" next to RogerThat,
+          or run in Terminal (replace the path with where you put the app):
+            xattr -dr com.apple.quarantine ~/Downloads/RogerThat-macOS/RogerThat.app
+          Then open it, allow microphone access, and pick your audio device in SETTINGS.
 
           --
           vst34
