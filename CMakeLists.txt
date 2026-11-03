@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(RogerThat VERSION 1.5.1)
+project(RogerThat VERSION 1.6.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,10 +19,10 @@ else()
 endif()
 
 if(APPLE)
-    set(RT_FORMATS AU VST3 Standalone)
+    set(RT_FORMATS AU VST3)
     set(RT_COPY_AFTER_BUILD TRUE)
 else()
-    set(RT_FORMATS VST3 Standalone)
+    set(RT_FORMATS VST3)
     set(RT_COPY_AFTER_BUILD FALSE)
 endif()
 
@@ -44,7 +44,7 @@ juce_add_plugin(RogerThat
     FORMATS ${RT_FORMATS}
     PRODUCT_NAME "RogerThat"          # bundle / file name (RogerThat.vst3) — без пробелов, как и в DAW
     PLUGIN_NAME "RogerThat"           # name shown in the DAW — единый брендинг без пробелов
-    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/Assets/icon_1024.png"   # app icon (Dock / Explorer) for the standalone
+    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/Assets/icon_1024.png"   # bundle icon for RogerThat.vst3 / .component in Finder
     DESCRIPTION "Radio / telephone voice distortion"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
@@ -55,13 +55,11 @@ juce_add_plugin(RogerThat
 target_sources(RogerThat PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
-    Source/Widgets.cpp
-    Source/StandaloneApp.cpp)
+    Source/Widgets.cpp)
 
 target_include_directories(RogerThat PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_compile_definitions(RogerThat PUBLIC
-    JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1   # our own app class in Source/StandaloneApp.cpp
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
