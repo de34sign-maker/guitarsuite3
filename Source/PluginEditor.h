@@ -5,15 +5,13 @@
 class RogerThatEditor : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:
-    static constexpr int baseW = 620, baseH = 400;     // design size; the UI is scaled from this
+    static constexpr int baseW = 620, baseH = 400;     // design size (all layout is done in these units)
+    static constexpr float uiScale = 1.2f;             // the whole UI is drawn 20 % larger than the design
 
     explicit RogerThatEditor(RogerThatProcessor&);
     ~RogerThatEditor() override = default;
     void paint(juce::Graphics&) override;
     void resized() override;
-
-    void setUiScale(float s);                          // 1.0 / 1.25 / 1.5 / 2.0, stored in the plugin state
-    float getUiScale() const { return uiScale; }
 
 private:
     void timerCallback() override;
@@ -27,7 +25,6 @@ private:
 
     using APVTS = juce::AudioProcessorValueTreeState;
     RogerThatProcessor& proc;
-    float uiScale = 1.f;
 
     Surface surface;
     rt::ScopeView scope;

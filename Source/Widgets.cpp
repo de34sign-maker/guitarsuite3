@@ -263,23 +263,7 @@ AboutPanel::AboutPanel()
     setWantsKeyboardFocus(true);
     icon = juce::ImageCache::getFromMemory(RogerThatAssets::walkie_256_png, RogerThatAssets::walkie_256_pngSize);
     for (auto* b : { &spotify, &telegram, &instagram, &email }) addAndMakeVisible(b);
-
-    const std::pair<PillToggle*, float> scales[] { { &scale100, 1.f }, { &scale125, 1.25f }, { &scale150, 1.5f }, { &scale200, 2.f } };
-    for (auto& [b, v] : scales)
-    {
-        b->setRadioGroupId(34);
-        const float value = v;
-        b->onClick = [this, value] { if (onScaleChosen) onScaleChosen(value); };
-        addAndMakeVisible(b);
-    }
-    scale100.setToggleState(true, juce::dontSendNotification);
     setVisible(false);
-}
-
-void AboutPanel::setScale(float s)
-{
-    PillToggle* which = s >= 1.9f ? &scale200 : s >= 1.4f ? &scale150 : s >= 1.2f ? &scale125 : &scale100;
-    which->setToggleState(true, juce::dontSendNotification);
 }
 
 void AboutPanel::open()
@@ -293,22 +277,12 @@ void AboutPanel::close() { setVisible(false); }
 
 void AboutPanel::resized()
 {
-    const int cw = 480, ch = 378, pad = 28;
+    const int cw = 480, ch = 340, pad = 28;
     card = getLocalBounds().withSizeKeepingCentre(cw, ch);
 
-    // UI size pills: PillToggle draws its pill inside a 6 px shadow margin, so 84x44 bounds = a 72x32 pill
-    const int pillW = PillToggle::widthPx, boundsH = 32 + 12;
-    int x = card.getX() + pad - 6;
-    const int py = card.getY() + 158 - 6;
-    for (auto* b : { &scale100, &scale125, &scale150, &scale200 })
-    {
-        b->setBounds(x, py, pillW, boundsH);
-        x += pillW - 12 + 8;
-    }
-
     // four link rows at the bottom of the card
-    const int rowH = 36;
-    int y = card.getBottom() - 20 - rowH * 4;
+    const int rowH = 38;
+    int y = card.getBottom() - 22 - rowH * 4;
     for (auto* b : { &spotify, &telegram, &instagram, &email })
     {
         b->setBounds(card.getX() + pad, y, cw - pad * 2, rowH);
@@ -365,10 +339,6 @@ void AboutPanel::paint(juce::Graphics& g)
     g.drawText("Yevhenii Bondar", juce::Rectangle<float>(x, y2 + 18.f, colW, 20.f), juce::Justification::centredLeft);
     g.drawText(juce::String::fromUTF8("\xd0\xa0\x33\xd0\x99\xd0\x9c\x34\xd0\x9d"), // Р3ЙМ4Н
                juce::Rectangle<float>(x + colW, y2 + 18.f, colW, 20.f), juce::Justification::centredLeft);
-
-    // UI size caption (pills are child components placed in resized())
-    g.setFont(caption); g.setColour(theme::faint);
-    g.drawText("UI SIZE", juce::Rectangle<float>(x, c.getY() + 140.f, colW, 14.f), juce::Justification::centredLeft);
 }
 
 void AboutPanel::mouseDown(const juce::MouseEvent& e)

@@ -67,6 +67,13 @@ public:
     }
 
     Font getComboBoxFont(ComboBox&) override            { return Fonts::inter(13.f); }
+
+    // never squeeze combo-box text horizontally (JUCE's default condenses it to 70 %); clip with "..." instead
+    void positionComboBoxText(ComboBox& box, Label& label) override
+    {
+        LookAndFeel_V4::positionComboBoxText(box, label);
+        label.setMinimumHorizontalScale(1.0f);
+    }
     Font getPopupMenuFont() override                    { return Fonts::inter(13.f); }
     Font getLabelFont(Label&) override                  { return Fonts::inter(13.f); }
     Font getTextButtonFont(TextButton&, int) override   { return Fonts::inter(12.f, 0.04f, true); }
@@ -139,7 +146,7 @@ public:
         mute.setClickingTogglesState(true);
         mute.getToggleStateValue().referTo(holder.getMuteInputValue());
         addAndMakeVisible(mute);
-        setSize(440, 560);
+        setSize(640, 560);   // wide enough that long device names are not squeezed in the combo boxes
     }
 
     void paint(Graphics& g) override { g.fillAll(theme::bg); }
@@ -156,6 +163,20 @@ private:
     StandalonePluginHolder& holder;
     AudioDeviceSelectorComponent selector;
     ToggleButton mute;
+};
+
+// ---- Settings window: the close button just hides it (a plain DialogWindow does nothing on close) --
+class SettingsWindow : public DialogWindow
+{
+public:
+    explicit SettingsWindow(StandalonePluginHolder& h)
+        : DialogWindow("Audio Settings", theme::bg, true, true)
+    {
+        setUsingNativeTitleBar(true);
+        setContentOwned(new SettingsContent(h), true);
+        setResizable(false, false);
+    }
+    void closeButtonPressed() override { setVisible(false); }
 };
 
 // ---- Strip under the title bar ------------------------------------------------------------------
@@ -225,10 +246,7 @@ private:
         if (dialog == nullptr)
         {
             // non-modal, owned by the strip: no deferred deletion by the modal manager at quit
-            dialog = std::make_unique<DialogWindow>("Audio Settings", theme::bg, true, true);
-            dialog->setUsingNativeTitleBar(true);
-            dialog->setContentOwned(new SettingsContent(holder), true);
-            dialog->setResizable(false, false);
+            dialog = std::make_unique<SettingsWindow>(holder);
             if (auto* top = getTopLevelComponent())
                 dialog->centreAroundComponent(top, dialog->getWidth(), dialog->getHeight());
         }
@@ -239,7 +257,7 @@ private:
     StandalonePluginHolder& holder;
     Value muted;
     SettingsButton settings;
-    std::unique_ptr<DialogWindow> dialog;
+    std::unique_ptr<SettingsWindow> dialog;
 };
 
 // ---- Window content: strip + plugin editor ------------------------------------------------------

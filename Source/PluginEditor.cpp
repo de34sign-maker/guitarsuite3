@@ -2,8 +2,6 @@
 
 using namespace rt;
 
-static const juce::Identifier kUiScale("ui_scale");
-
 RogerThatEditor::RogerThatEditor(RogerThatProcessor& p)
     : AudioProcessorEditor(&p), proc(p), scope(p.scope)
 {
@@ -22,7 +20,6 @@ RogerThatEditor::RogerThatEditor(RogerThatProcessor& p)
     brand.onClick = [this] { about.open(); };
     surface.addAndMakeVisible(brand);
     surface.addChildComponent(about);   // hidden until the badge is clicked
-    about.onScaleChosen = [this](float s) { setUiScale(s); };
 
     compAmtAtt = std::make_unique<APVTS::SliderAttachment>(proc.apvts, "comp_amount", compKnob);
     fuzzAmtAtt = std::make_unique<APVTS::SliderAttachment>(proc.apvts, "dist_amount", fuzzKnob);
@@ -57,21 +54,8 @@ RogerThatEditor::RogerThatEditor(RogerThatProcessor& p)
     about.setBounds(0, 0, baseW, baseH);
 
     setResizable(false, false);
-    const float saved = (float) (double) proc.apvts.state.getProperty(kUiScale, 1.0);
-    uiScale = juce::jlimit(1.f, 2.f, saved);
-    about.setScale(uiScale);
-    setSize(juce::roundToInt(baseW * uiScale), juce::roundToInt(baseH * uiScale));
+    setSize(juce::roundToInt(baseW * uiScale), juce::roundToInt(baseH * uiScale));   // 744 x 480
     startTimerHz(30);
-}
-
-void RogerThatEditor::setUiScale(float s)
-{
-    s = juce::jlimit(1.f, 2.f, s);
-    if (std::abs(s - uiScale) < 0.001f) return;
-    uiScale = s;
-    proc.apvts.state.setProperty(kUiScale, (double) s, nullptr);   // saved with the project / preset
-    about.setScale(s);
-    setSize(juce::roundToInt(baseW * s), juce::roundToInt(baseH * s));
 }
 
 void RogerThatEditor::paint(juce::Graphics& g)
