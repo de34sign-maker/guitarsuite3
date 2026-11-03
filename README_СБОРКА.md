@@ -1,6 +1,6 @@
 # Roger That (vst34) — клон Adobe Audition 3.0 Guitar Suite (VST3 + AU)
 
-Бывший GuitarSuite3. Имя в DAW: **Roger That**, производитель **vst34**, файл `RogerThat.vst3`.
+Бывший GuitarSuite3. Имя в DAW: **Roger That**, производитель **vst34**, файл `Roger That.vst3`.
 
 Снято измерениями с оригинала 2 ноября 2026 (v1.1: переснято на 44,1 кГц, Resonance 34). Точность на вокале: −29 дБ по форме волны
 (спектр ±0,3 дБ) — на слух неотличимо. На любой частоте проекта (48, 96 кГц…) плагин звучит так же, как Audition на 44,1: ядра фильтра и кабинета пересчитываются под частоту хоста без задержки и без обрезки (сам Audition на 48 кГц добавляет 0,5 мс задержки и режет хвост кабинета — это не воспроизводится намеренно).
@@ -34,8 +34,8 @@
    Первая команда скачает JUCE с GitHub (~2 мин). Вторая компилирует (~3–5 мин). В конце не должно быть слова `error`.
 
 5. Плагин сам копируется в:
-   - `~/Library/Audio/Plug-Ins/VST3/RogerThat.vst3`
-   - `~/Library/Audio/Plug-Ins/Components/RogerThat.component`
+   - `~/Library/Audio/Plug-Ins/VST3/Roger That.vst3`
+   - `~/Library/Audio/Plug-Ins/Components/Roger That.component`
 
 6. **Studio One**: перезапустить → Studio One → Settings → Locations → VST Plug-Ins → Reset Blocklist / Rescan. Плагин появится как **Roger That** (производитель vst34).
    Если AU-версия не видна в других DAW — один раз выполнить в терминале: `killall -9 AudioComponentRegistrar`.

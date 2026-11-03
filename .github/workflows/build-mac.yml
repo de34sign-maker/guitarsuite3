@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+# Брендинг: плагин, файлы и папки называются «Roger That» (с пробелом).
+# Только сами zip-архивы без пробелов (RogerThat-macOS.zip) — GitHub заменяет пробелы
+# в именах файлов релиза на точки, и ссылка стала бы «Roger.That.-.macOS.zip».
+
 jobs:
   mac:
     runs-on: macos-14
@@ -25,24 +29,24 @@ jobs:
           set -e
           ART=build/RogerThat_artefacts/Release
           ls -R "$ART" | head -50
-          codesign --force --deep -s - "$ART/VST3/RogerThat.vst3"
-          codesign --force --deep -s - "$ART/AU/RogerThat.component"
-          codesign --force --deep -s - "$ART/Standalone/RogerThat.app"
-          PKG=RogerThat-macOS
+          codesign --force --deep -s - "$ART/VST3/Roger That.vst3"
+          codesign --force --deep -s - "$ART/AU/Roger That.component"
+          codesign --force --deep -s - "$ART/Standalone/Roger That.app"
+          PKG="Roger That - macOS"
           mkdir -p "$PKG"
-          cp -R "$ART/VST3/RogerThat.vst3" "$ART/AU/RogerThat.component" "$ART/Standalone/RogerThat.app" "$PKG/"
+          cp -R "$ART/VST3/Roger That.vst3" "$ART/AU/Roger That.component" "$ART/Standalone/Roger That.app" "$PKG/"
           cat > "$PKG/УСТАНОВКА.txt" <<'EOF'
           Roger That (vst34) — установка на macOS
 
-          1. Скопировать RogerThat.vst3 в /Library/Audio/Plug-Ins/VST3/
-             (Finder: Переход -> Переход к папке... -> вставить путь). Если там лежит старый
-             GuitarSuite3.vst3 — его можно удалить.
-             AU-версия (RogerThat.component) — в /Library/Audio/Plug-Ins/Components/, нужна только для Logic/GarageBand.
-          2. Открыть Терминал и выполнить (снимает пометку «скачано из интернета»):
-             sudo xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/RogerThat.vst3
+          1. Скопировать «Roger That.vst3» в /Library/Audio/Plug-Ins/VST3/
+             (Finder: Переход -> Переход к папке... -> вставить путь).
+             Если там лежат старые RogerThat.vst3 или GuitarSuite3.vst3 — удалить их, это тот же плагин.
+             AU-версия («Roger That.component») — в /Library/Audio/Plug-Ins/Components/, нужна только для Logic/GarageBand.
+          2. Открыть Терминал и выполнить (снимает пометку «скачано из интернета»; кавычки обязательны):
+             sudo xattr -dr com.apple.quarantine "/Library/Audio/Plug-Ins/VST3/Roger That.vst3"
           3. Перезапустить DAW. Плагин: Roger That (производитель vst34).
           EOF
-          # --keepParent: в архив попадает сама папка RogerThat-macOS, при распаковке она и появится
+          # --keepParent: в архив попадает сама папка «Roger That - macOS», при распаковке она и появится
           ditto -c -k --keepParent --sequesterRsrc "$PKG" RogerThat-macOS.zip
           unzip -l RogerThat-macOS.zip | head -20
 
@@ -67,20 +71,23 @@ jobs:
         run: |
           $art = "build/RogerThat_artefacts/Release"
           Get-ChildItem -Recurse $art | Select-Object FullName | Select-Object -First 40
-          New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item -Recurse "$art/VST3/RogerThat.vst3" dist/
-          Copy-Item "$art/Standalone/RogerThat.exe" dist/
+          $pkg = "Roger That - Windows"
+          New-Item -ItemType Directory -Force $pkg | Out-Null
+          Copy-Item -Recurse "$art/VST3/Roger That.vst3" "$pkg/"
+          Copy-Item "$art/Standalone/Roger That.exe" "$pkg/"
           $txt = @"
           Roger That (vst34) — установка на Windows
 
-          1. Скопировать папку RogerThat.vst3 целиком в C:\Program Files\Common Files\VST3\
+          1. Скопировать папку «Roger That.vst3» целиком в C:\Program Files\Common Files\VST3\
              (Проводник спросит разрешение администратора — нажать «Продолжить»).
+             Если там лежит старая папка RogerThat.vst3 — удалить её, это тот же плагин.
           2. Перезапустить DAW (FL Studio, Ableton, Cubase, Studio One, Reaper...) и при необходимости
              пересканировать плагины. Плагин: Roger That (производитель vst34).
-          RogerThat.exe — автономная версия для быстрой проверки без DAW (звук с микрофона/линейного входа).
+          «Roger That.exe» — автономная версия для быстрой проверки без DAW (звук с микрофона/линейного входа).
           "@
-          [IO.File]::WriteAllText("dist/УСТАНОВКА.txt", $txt, (New-Object System.Text.UTF8Encoding $true))
-          Compress-Archive -Path dist/* -DestinationPath RogerThat-Windows.zip
+          [IO.File]::WriteAllText("$pkg/УСТАНОВКА.txt", $txt, (New-Object System.Text.UTF8Encoding $true))
+          Compress-Archive -Path $pkg -DestinationPath RogerThat-Windows.zip
+          Get-ChildItem RogerThat-Windows.zip
 
       - uses: actions/upload-artifact@v4
         with:

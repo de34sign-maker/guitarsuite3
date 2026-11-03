@@ -41,7 +41,7 @@ juce_add_plugin(RogerThat
     PLUGIN_MANUFACTURER_CODE Vs34
     PLUGIN_CODE Rgth
     FORMATS ${RT_FORMATS}
-    PRODUCT_NAME "RogerThat"          # bundle / file name (no spaces)
+    PRODUCT_NAME "Roger That"         # bundle / file name ("Roger That.vst3")
     PLUGIN_NAME "Roger That"          # name shown in the DAW
     DESCRIPTION "Radio / telephone voice distortion"
     IS_SYNTH FALSE
