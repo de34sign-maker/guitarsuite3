@@ -21,6 +21,8 @@ private:
     rt::UnderlineToggle compOn { "COMP" }, fuzzOn { "FUZZ" };
     rt::PillToggle filtOn { "FILTER" }, boxOn { "BOX" };
     juce::Label mixLabel;
+    rt::BrandButton brand;
+    rt::AboutPanel about;
 
     std::unique_ptr<APVTS::SliderAttachment> compAmtAtt, fuzzAmtAtt, mixAtt;
     std::unique_ptr<APVTS::ButtonAttachment> compOnAtt, fuzzOnAtt, filtOnAtt, boxOnAtt;

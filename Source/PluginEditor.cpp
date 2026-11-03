@@ -16,6 +16,10 @@ RogerThatEditor::RogerThatEditor(RogerThatProcessor& p)
     mixLabel.setColour(juce::Label::textColourId, theme::muted);
     addAndMakeVisible(mixLabel);
 
+    brand.onClick = [this] { about.open(); };
+    addAndMakeVisible(brand);
+    addChildComponent(about);   // hidden until the badge is clicked
+
     compAmtAtt = std::make_unique<APVTS::SliderAttachment>(proc.apvts, "comp_amount", compKnob);
     fuzzAmtAtt = std::make_unique<APVTS::SliderAttachment>(proc.apvts, "dist_amount", fuzzKnob);
     mixAtt     = std::make_unique<APVTS::SliderAttachment>(proc.apvts, "mix",         mixKnob);
@@ -33,15 +37,13 @@ void RogerThatEditor::paint(juce::Graphics& g)
 {
     g.fillAll(theme::bg);
     drawPanelShadow(g, scope.getBounds().toFloat(), 0.f);
-
-    g.setFont(Fonts::mono(9.f, 0.18f));
-    g.setColour(theme::faint);
-    g.drawText("34", getWidth() - 60, getHeight() - 22, 44, 14, juce::Justification::centredRight);
 }
 
 void RogerThatEditor::resized()
 {
     scope.setBounds(0, 0, getWidth(), 212);
+    brand.setBounds(getWidth() - 16 - BrandButton::widthPx, getHeight() - 10 - BrandButton::heightPx, BrandButton::widthPx, BrandButton::heightPx);
+    about.setBounds(getLocalBounds());
 
     // controls row, in signal order: COMP · FILTER · FUZZ · BOX · MIX
     const int knobY = 242, labelY = 344, labelH = 26;

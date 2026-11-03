@@ -68,6 +68,51 @@ public:
     void paintButton(juce::Graphics&, bool highlighted, bool down) override;
 };
 
+// ---- Brand mark: a dot with two signal arcs (drawn as a path, scales with the box) --------------
+void drawBrandMark(juce::Graphics& g, juce::Rectangle<float> box, juce::Colour colour);
+
+// ---- Bottom-right "vst34" badge; click opens the About panel ----------------------------------
+class BrandButton : public juce::Button
+{
+public:
+    static constexpr int widthPx = 70, heightPx = 20;
+    BrandButton();
+    void paintButton(juce::Graphics&, bool highlighted, bool down) override;
+};
+
+// ---- Link pill inside the About panel (opens a URL) -------------------------------------------
+class LinkPill : public juce::Button
+{
+public:
+    LinkPill(const juce::String& text, const juce::String& url);
+    void paintButton(juce::Graphics&, bool highlighted, bool down) override;
+private:
+    juce::String url;
+};
+
+// ---- About overlay: who made the plugin and where to find the artist --------------------------
+class AboutPanel : public juce::Component
+{
+public:
+    AboutPanel();
+    void paint(juce::Graphics&) override;
+    void resized() override;
+    void mouseDown(const juce::MouseEvent&) override;     // click outside the card closes
+    void mouseMove(const juce::MouseEvent&) override { repaint(); }   // hover on the close cross
+    void mouseExit(const juce::MouseEvent&) override { repaint(); }
+    bool keyPressed(const juce::KeyPress&) override;      // Esc closes
+    void open();
+    void close();
+
+private:
+    juce::Rectangle<int> card;
+    LinkPill spotify   { "Spotify",   "https://open.spotify.com/artist/4WJKwDv6cDbc1hDyL0xnBg" };
+    LinkPill telegram  { "Telegram",  "https://t.me/callmerayman" };
+    LinkPill instagram { "Instagram", "https://www.instagram.com/callme34_/" };
+    LinkPill email     { "Email",     "mailto:iamyevheniibondar@gmail.com" };
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AboutPanel)
+};
+
 // ---- Scrolling waveform: input (grey) and what the plugin adds (accent) -----------------------
 class ScopeView : public juce::Component
 {

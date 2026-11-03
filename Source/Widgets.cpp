@@ -190,6 +190,186 @@ void PillToggle::paintButton(juce::Graphics& g, bool highlighted, bool down)
     g.drawText(text, juce::Rectangle<float>(x0 + 14.f, pill.getY(), textW + 4.f, pill.getHeight()), juce::Justification::centredLeft);
 }
 
+// ---- Brand mark --------------------------------------------------------------------------------
+void drawBrandMark(juce::Graphics& g, juce::Rectangle<float> box, juce::Colour colour)
+{
+    // a dot in the lower-left with two "broadcast" arcs opening to the upper-right
+    const float s = box.getWidth();
+    const float cx = box.getX() + s * 0.30f, cy = box.getY() + s * 0.70f;
+    const float dotR = s * 0.15f;
+    g.setColour(colour);
+    g.fillEllipse(cx - dotR, cy - dotR, dotR * 2.f, dotR * 2.f);
+
+    juce::Path arcs;
+    for (float r : { s * 0.42f, s * 0.68f })
+        arcs.addCentredArc(cx, cy, r, r, 0.f, 0.f, juce::MathConstants<float>::halfPi, true);
+    g.strokePath(arcs, juce::PathStrokeType(s * 0.12f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+}
+
+// ---- BrandButton -------------------------------------------------------------------------------
+BrandButton::BrandButton() : juce::Button("vst34")
+{
+    setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    setTooltip("About RogerThat");
+}
+
+void BrandButton::paintButton(juce::Graphics& g, bool highlighted, bool down)
+{
+    auto r = getLocalBounds().toFloat();
+    if (down) r.translate(0.f, 1.f);
+
+    auto font = Fonts::mono(9.f, 0.18f);
+    g.setFont(font);
+    const float textW = juce::GlyphArrangement::getStringWidth(font, "vst34");
+    const float markS = 12.f, gap = 6.f;
+    const float x0 = r.getRight() - (markS + gap + textW);
+    const float cy = r.getCentreY();
+
+    drawBrandMark(g, { x0, cy - markS * 0.5f, markS, markS }, highlighted ? theme::accent : theme::accent.withAlpha(0.6f));
+    g.setColour(highlighted ? theme::muted : theme::faint);
+    g.drawText("vst34", juce::Rectangle<float>(x0 + markS + gap, r.getY(), textW + 2.f, r.getHeight()), juce::Justification::centredLeft);
+}
+
+// ---- LinkPill ----------------------------------------------------------------------------------
+LinkPill::LinkPill(const juce::String& text, const juce::String& u) : juce::Button(text), url(u)
+{
+    setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    onClick = [this] { juce::URL(url).launchInDefaultBrowser(); };
+}
+
+void LinkPill::paintButton(juce::Graphics& g, bool highlighted, bool down)
+{
+    auto pill = getLocalBounds().toFloat().reduced(4.f);
+    if (down) pill.translate(0.f, 1.f);
+
+    juce::Path p; p.addRoundedRectangle(pill, pill.getHeight() * 0.5f);
+    if (! down)
+    {
+        juce::DropShadow(juce::Colours::black.withAlpha(0.10f), 5, { 0, 2 }).drawForPath(g, p);
+        juce::DropShadow(juce::Colours::black.withAlpha(0.05f), 1, { 0, 1 }).drawForPath(g, p);
+    }
+    g.setColour(highlighted ? theme::disc.brighter(0.03f) : theme::disc);
+    g.fillPath(p);
+
+    auto font = Fonts::inter(11.f, 0.06f, true);
+    g.setFont(font);
+    const auto text = getButtonText();
+    const float textW = juce::GlyphArrangement::getStringWidth(font, text);
+    const float arrowS = 7.f, gap = 7.f;
+    const float x0 = pill.getCentreX() - (textW + gap + arrowS) * 0.5f;
+
+    g.setColour(highlighted ? theme::ink : theme::muted);
+    g.drawText(text, juce::Rectangle<float>(x0, pill.getY(), textW + 2.f, pill.getHeight()), juce::Justification::centredLeft);
+
+    // small "open outside" arrow: diagonal line with a corner head, pointing up-right
+    const float ax = x0 + textW + gap, ay = pill.getCentreY() + arrowS * 0.5f - 0.5f;
+    juce::Path a;
+    a.startNewSubPath(ax, ay);                 a.lineTo(ax + arrowS, ay - arrowS);
+    a.startNewSubPath(ax + arrowS * 0.35f, ay - arrowS); a.lineTo(ax + arrowS, ay - arrowS); a.lineTo(ax + arrowS, ay - arrowS * 0.35f);
+    g.setColour(theme::accent);
+    g.strokePath(a, juce::PathStrokeType(1.4f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+}
+
+// ---- AboutPanel --------------------------------------------------------------------------------
+AboutPanel::AboutPanel()
+{
+    setWantsKeyboardFocus(true);
+    for (auto* b : { &spotify, &telegram, &instagram, &email }) addAndMakeVisible(b);
+    setVisible(false);
+}
+
+void AboutPanel::open()
+{
+    setVisible(true);
+    toFront(true);
+    grabKeyboardFocus();
+}
+
+void AboutPanel::close() { setVisible(false); }
+
+void AboutPanel::resized()
+{
+    const int cw = 404, ch = 236;
+    card = getLocalBounds().withSizeKeepingCentre(cw, ch);
+
+    // link pills row, bottom part of the card
+    const int pillH = 36, pillW = 86, gap = 6;
+    int x = card.getX() + 24 - 4;            // −4: pill has 4 px of shadow spill on each side
+    const int y = card.getBottom() - 24 - 18 - 12 - pillH + 4;
+    for (auto* b : { &spotify, &telegram, &instagram, &email })
+    {
+        b->setBounds(x, y, pillW, pillH);
+        x += pillW + gap - 8;
+    }
+}
+
+void AboutPanel::paint(juce::Graphics& g)
+{
+    g.fillAll(theme::ink.withAlpha(0.18f));
+
+    auto c = card.toFloat();
+    juce::Path p; p.addRoundedRectangle(c, 14.f);
+    juce::DropShadow(juce::Colours::black.withAlpha(0.18f), 24, { 0, 10 }).drawForPath(g, p);
+    g.setColour(theme::panel);
+    g.fillPath(p);
+
+    const float pad = 24.f;
+    float x = c.getX() + pad, y = c.getY() + pad;
+
+    // header: mark + name
+    drawBrandMark(g, { x, y, 22.f, 22.f }, theme::accent);
+    g.setFont(Fonts::inter(15.f, 0.f, true));
+    g.setColour(theme::ink);
+    g.drawText("RogerThat", juce::Rectangle<float>(x + 32.f, y - 1.f, 200.f, 24.f), juce::Justification::centredLeft);
+    g.setFont(Fonts::mono(10.f, 0.18f));
+    g.setColour(theme::faint);
+    g.drawText("vst34  ·  v" JucePlugin_VersionString, juce::Rectangle<float>(x + 32.f, y + 18.f, 200.f, 14.f), juce::Justification::centredLeft);
+
+    // close cross, top-right
+    const auto cr = juce::Rectangle<float>(c.getRight() - 40.f, c.getY() + 16.f, 24.f, 24.f);
+    const bool overClose = cr.contains(getMouseXYRelative().toFloat());
+    g.setColour(overClose ? theme::ink : theme::faint);
+    const float k = 4.5f; const auto cc = cr.getCentre();
+    g.drawLine(cc.x - k, cc.y - k, cc.x + k, cc.y + k, 1.5f);
+    g.drawLine(cc.x - k, cc.y + k, cc.x + k, cc.y - k, 1.5f);
+
+    // two columns: creator / artist
+    y += 56.f;
+    auto caption = Fonts::inter(9.5f, 0.14f);
+    auto value   = Fonts::inter(14.f, 0.f, true);
+    const float colW = (c.getWidth() - pad * 2.f) * 0.5f;
+
+    g.setFont(caption); g.setColour(theme::faint);
+    g.drawText("CREATED BY", juce::Rectangle<float>(x, y, colW, 14.f), juce::Justification::centredLeft);
+    g.drawText("ARTIST",     juce::Rectangle<float>(x + colW, y, colW, 14.f), juce::Justification::centredLeft);
+    g.setFont(value); g.setColour(theme::ink);
+    g.drawText("Yevhenii Bondar", juce::Rectangle<float>(x, y + 16.f, colW, 22.f), juce::Justification::centredLeft);
+    g.drawText(juce::String::fromUTF8("\xd0\xa0\x33\xd0\x99\xd0\x9c\x34\xd0\x9d"), // Р3ЙМ4Н
+               juce::Rectangle<float>(x + colW, y + 16.f, colW, 22.f), juce::Justification::centredLeft);
+
+    // links caption (pills are child components placed in resized())
+    y += 54.f;
+    g.setFont(caption); g.setColour(theme::faint);
+    g.drawText("FIND ME", juce::Rectangle<float>(x, y, colW, 14.f), juce::Justification::centredLeft);
+
+    // email in plain text so it can be read / retyped
+    g.setFont(Fonts::mono(9.5f, 0.06f)); g.setColour(theme::legend);
+    g.drawText("iamyevheniibondar@gmail.com", juce::Rectangle<float>(x, c.getBottom() - pad - 14.f, c.getWidth() - pad * 2.f, 14.f), juce::Justification::centredLeft);
+}
+
+void AboutPanel::mouseDown(const juce::MouseEvent& e)
+{
+    const auto closeBox = juce::Rectangle<int>(card.getRight() - 44, card.getY() + 12, 32, 32);
+    if (! card.contains(e.getPosition()) || closeBox.contains(e.getPosition()))
+        close();
+}
+
+bool AboutPanel::keyPressed(const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::escapeKey) { close(); return true; }
+    return false;
+}
+
 // ---- ScopeView ---------------------------------------------------------------------------------
 void ScopeView::paint(juce::Graphics& g)
 {
